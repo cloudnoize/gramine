@@ -205,7 +205,9 @@ static int64_t file_read(PAL_HANDLE handle, uint64_t offset, uint64_t count, voi
 
 static int64_t file_write(PAL_HANDLE handle, uint64_t offset, uint64_t count, const void* buffer) {
     int64_t ret;
-
+    uint64_t start_curr_Time = 0;
+    _PalSystemTimeQuery(&start_curr_Time);
+    log_error("EL_OCALL_WRITE_file_write fd %d count %d time %ld ",handle->file.fd,count,start_curr_Time);   
     if (!handle->file.trusted) {
         assert(!handle->file.chunk_hashes);
         if (handle->file.seekable) {
@@ -213,9 +215,16 @@ static int64_t file_write(PAL_HANDLE handle, uint64_t offset, uint64_t count, co
         } else {
             ret = ocall_write(handle->file.fd, buffer, count);
         }
+        uint64_t end_curr_Time = 0;
+        _PalSystemTimeQuery(&end_curr_Time);
+        uint64_t total_time = end_curr_Time - start_curr_Time;
+
+        log_error("END EL_OCALL_WRITE_file_write fd %d count %d total time %ld ",handle->file.fd,count,total_time);
+        if(total_time/1000 > 100){
+            log_error("!!!!END EL_OCALL_WRITE_file_write fd %d count %d total time %ld",handle->file.fd,count,total_time);
+        }   
         return ret < 0 ? unix_to_pal_error(ret) : ret;
     }
-
     /* case of trusted file: disallow writing completely */
     assert(handle->file.chunk_hashes);
     log_warning("Writing to a trusted file (%s) is disallowed!", handle->file.realpath);
@@ -400,7 +409,12 @@ static int file_setlength(PAL_HANDLE handle, uint64_t length) {
 }
 
 static int file_flush(PAL_HANDLE handle) {
+    uint64_t start_curr_Time = 0;
+    _PalSystemTimeQuery(&start_curr_Time);
+    log_error("EL_OCALL_WRITE_file_flush start fd %d time %ld ",handle->file.fd,start_curr_Time);   
     int ret = ocall_fsync(handle->file.fd);
+    _PalSystemTimeQuery(&start_curr_Time);
+    log_error("EL_OCALL_WRITE_file_flush end fd %d time %ld ",handle->file.fd,start_curr_Time);  
     return ret < 0 ? unix_to_pal_error(ret) : 0;
 }
 

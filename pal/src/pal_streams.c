@@ -171,6 +171,9 @@ int PalStreamRead(PAL_HANDLE handle, uint64_t offset, size_t* count, void* buffe
 }
 
 int64_t _PalStreamWrite(PAL_HANDLE handle, uint64_t offset, uint64_t count, const void* buf) {
+    uint64_t start_curr_Time = 0;
+    _PalSystemTimeQuery(&start_curr_Time);
+    log_error("EL_OCALL_WRITE_PalStreamWrite fd %d count %d time %ld",handle->dev.fd,count,start_curr_Time); 
     const struct handle_ops* ops = HANDLE_OPS(handle);
 
     if (!ops)
@@ -179,7 +182,16 @@ int64_t _PalStreamWrite(PAL_HANDLE handle, uint64_t offset, uint64_t count, cons
     if (!ops->write)
         return -PAL_ERROR_NOTSUPPORT;
 
-    return ops->write(handle, offset, count, buf);
+    int64_t ret =  ops->write(handle, offset, count, buf);
+    uint64_t end_curr_Time = 0;
+    _PalSystemTimeQuery(&end_curr_Time);
+    uint64_t total_time = end_curr_Time - start_curr_Time;
+
+    log_error("END EL_OCALL_WRITE__PalStreamWrite fd %d count %d total time %ld",handle->dev.fd,count,total_time);
+    if(total_time/1000 > 100){
+        log_error("!!!!END EL_OCALL_WRITE__PalStreamWrite fd %d count %d total time %ld",handle->dev.fd,count,total_time);
+    }   
+    return ret;
 }
 
 int PalStreamWrite(PAL_HANDLE handle, uint64_t offset, size_t* count, void* buffer) {

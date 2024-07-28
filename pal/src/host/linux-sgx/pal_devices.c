@@ -121,8 +121,12 @@ static int64_t dev_write(PAL_HANDLE handle, uint64_t offset, uint64_t size, cons
 
     if (!(handle->flags & PAL_HANDLE_FD_WRITABLE))
         return -PAL_ERROR_DENIED;
-
+    uint64_t curr_Time = 0;
+    ocall_gettime(&curr_Time);
+    log_error("EL_OCALL_WRITE_dev_write fd %d count %d time %ld",handle->dev.fd,size,curr_Time);
     ssize_t bytes = ocall_write(handle->dev.fd, buffer, size);
+    ocall_gettime(&curr_Time);
+    log_error("END EL_OCALL_WRITE_dev_write fd %d count %d time %ld",handle->dev.fd,size,curr_Time);
     return bytes < 0 ? unix_to_pal_error(bytes) : bytes;
 }
 

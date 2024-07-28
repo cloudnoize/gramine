@@ -189,8 +189,22 @@ static long sgx_ocall_fchmod(void* args) {
 }
 
 static long sgx_ocall_fsync(void* args) {
+    {
+        struct timeval tv;
+        DO_SYSCALL(gettimeofday, &tv, NULL);
+        uint64_t microsec = tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
+        log_error("before host fsync %ld", microsec);
+    }
+    
     struct ocall_fsync* ocall_fsync_args = args;
-    return DO_SYSCALL_INTERRUPTIBLE(fsync, ocall_fsync_args->fd);
+    long ret = DO_SYSCALL_INTERRUPTIBLE(fsync, ocall_fsync_args->fd);
+    {
+        struct timeval tv;
+        DO_SYSCALL(gettimeofday, &tv, NULL);
+        uint64_t microsec = tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
+        log_error("after host fsync %ld", microsec);
+    }
+    return ret;
 }
 
 static long sgx_ocall_ftruncate(void* args) {

@@ -48,8 +48,11 @@ rpc_queue_t* g_rpc_queue = NULL;
 static long sgx_exitless_ocall(uint64_t code, void* ocall_args) {
     /* perform OCALL with enclave exit if no RPC queue (i.e., no exitless); no need for atomics
      * because this pointer is set only once at enclave initialization */
-    if (!g_rpc_queue)
-        return sgx_ocall(code, ocall_args);
+    if (!g_rpc_queue){
+        long ret =  sgx_ocall(code, ocall_args);
+        return ret;
+    }   
+        
 
     /* allocate request in a new stack frame on OCALL stack; note that request's lock is used in
      * futex() and must be aligned to at least 4B */
@@ -510,6 +513,9 @@ out:
 }
 
 ssize_t ocall_write(int fd, const void* buf, size_t count) {
+    // uint64_t curr_Time = 0;
+    // ocall_gettime(&curr_Time);
+    // log_error("EL_OCALL_WRITE fd %d count %d time %d",fd,count,curr_Time);
     ssize_t retval = 0;
     void* obuf = NULL;
     struct ocall_write* ocall_write_args;
@@ -523,6 +529,7 @@ ssize_t ocall_write(int fd, const void* buf, size_t count) {
         untrusted_buf = buf;
     } else if (sgx_is_completely_within_enclave(buf, count)) {
         /* typical case of buf inside of enclave memory */
+        // TODO E.L increase MAX_UNTRUSTED_STACK_BUF
         if (count > MAX_UNTRUSTED_STACK_BUF) {
             /* buf is too big and may overflow untrusted stack, so use untrusted heap */
             retval = ocall_mmap_untrusted_cache(ALLOC_ALIGN_UP(count), &obuf, &need_munmap);
@@ -572,6 +579,8 @@ out:
     sgx_reset_ustack(old_ustack);
     if (obuf)
         ocall_munmap_untrusted_cache(obuf, ALLOC_ALIGN_UP(count), need_munmap);
+    // ocall_gettime(&curr_Time);
+    // log_error("END - EL_OCALL_WRITE fd %d count %d time %d",fd,count,curr_Time);
     return retval;
 }
 
@@ -825,7 +834,7 @@ int ocall_fchmod(int fd, unsigned short mode) {
 int ocall_fsync(int fd) {
     int retval = 0;
     struct ocall_fsync* ocall_fsync_args;
-
+   
     void* old_ustack = sgx_prepare_ustack();
     ocall_fsync_args = sgx_alloc_on_ustack_aligned(sizeof(*ocall_fsync_args),
                                                    alignof(*ocall_fsync_args));
@@ -833,13 +842,11 @@ int ocall_fsync(int fd) {
         sgx_reset_ustack(old_ustack);
         return -EPERM;
     }
-
+    
     COPY_VALUE_TO_UNTRUSTED(&ocall_fsync_args->fd, fd);
-
     do {
         retval = sgx_exitless_ocall(OCALL_FSYNC, ocall_fsync_args);
     } while (retval == -EINTR);
-
     if (retval < 0 && retval != -EBADF && retval != -EIO && retval != -EINVAL && retval != -EROFS) {
         retval = -EPERM;
     }

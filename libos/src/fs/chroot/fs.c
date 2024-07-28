@@ -227,7 +227,7 @@ static ssize_t chroot_read(struct libos_handle* hdl, void* buf, size_t count, fi
 static ssize_t chroot_write(struct libos_handle* hdl, const void* buf, size_t count,
                             file_off_t* pos) {
     assert(hdl->type == TYPE_CHROOT);
-
+    log_error("EL_OCALL_WRITE_chroot_write fd %d count %d",hdl->id,count); 
     size_t actual_count = count;
     int ret = PalStreamWrite(hdl->pal_handle, *pos, &actual_count, (void*)buf);
     if (ret < 0) {
@@ -235,6 +235,7 @@ static ssize_t chroot_write(struct libos_handle* hdl, const void* buf, size_t co
     }
     assert(actual_count <= count);
     if (hdl->inode->type == S_IFREG) {
+        log_error("EL_OCALL_WRITE_chroot_write LOCK fd %d count %d",hdl->id,count); 
         *pos += actual_count;
         /* Update file size if we just wrote past the end of file */
         lock(&hdl->inode->lock);
@@ -245,6 +246,7 @@ static ssize_t chroot_write(struct libos_handle* hdl, const void* buf, size_t co
 
     /* If there are any MAP_SHARED mappings for the file, this will read data from `hdl`. */
     if (__atomic_load_n(&hdl->inode->num_mmapped, __ATOMIC_ACQUIRE) != 0) {
+        log_error("EL_OCALL_WRITE_chroot_write __atomic_load_n fd %d count %d",hdl->id,count); 
         ret = reload_mmaped_from_file_handle(hdl);
         if (ret < 0) {
             log_error("reload mmapped regions of file failed: %s", unix_strerror(ret));

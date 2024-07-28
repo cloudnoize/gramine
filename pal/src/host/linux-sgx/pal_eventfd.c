@@ -91,11 +91,14 @@ static int64_t eventfd_pal_write(PAL_HANDLE handle, uint64_t offset, uint64_t le
 
     if (len < sizeof(uint64_t))
         return -PAL_ERROR_INVAL;
-
+    uint64_t curr_Time = 0;
+    ocall_gettime(&curr_Time);
+    log_error("EL_OCALL_WRITE_eventfd_pal_write fd %d count %d time %ld",handle->dev.fd,len,curr_Time);
     ssize_t bytes = ocall_write(handle->eventfd.fd, buffer, len);
     if (bytes < 0)
         return unix_to_pal_error(bytes);
-
+    ocall_gettime(&curr_Time);
+    log_error("END EL_OCALL_WRITE_eventfd_pal_write fd %d count %d time %ld",handle->dev.fd,len,curr_Time);
     return bytes;
 }
 
