@@ -116,49 +116,144 @@ static long sgx_ocall_cpuid(void* args) {
 
 static long sgx_ocall_open(void* args) {
     struct ocall_open* ocall_open_args = args;
-    return DO_SYSCALL_INTERRUPTIBLE(open, ocall_open_args->pathname, ocall_open_args->flags,
+
+    struct timeval tv;
+    DO_SYSCALL(gettimeofday, &tv, NULL);
+    uint64_t start_microsec = tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
+
+    long ret = DO_SYSCALL_INTERRUPTIBLE(open, ocall_open_args->pathname, ocall_open_args->flags,
                                     ocall_open_args->mode);
+
+    struct timeval end_tv;
+    DO_SYSCALL(gettimeofday, &end_tv, NULL);
+    uint64_t end_microsec = end_tv.tv_sec * (uint64_t)1000000 + end_tv.tv_usec;
+    log_error("duration host open %ld", end_microsec - start_microsec);
+
+    return ret;
 }
 
 static long sgx_ocall_close(void* args) {
     struct ocall_close* ocall_close_args = args;
     /* Callers cannot retry close on `-EINTR`, so we do not call `DO_SYSCALL_INTERRUPTIBLE`. */
-    return DO_SYSCALL(close, ocall_close_args->fd);
+    struct timeval tv;
+    DO_SYSCALL(gettimeofday, &tv, NULL);
+    uint64_t start_microsec = tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
+
+    long ret = DO_SYSCALL(close, ocall_close_args->fd);
+
+    struct timeval end_tv;
+    DO_SYSCALL(gettimeofday, &end_tv, NULL);
+    uint64_t end_microsec = end_tv.tv_sec * (uint64_t)1000000 + end_tv.tv_usec;
+    log_error("duration host close %ld", end_microsec - start_microsec);
+
+    return ret;
 }
 
 static long sgx_ocall_read(void* args) {
     struct ocall_read* ocall_read_args = args;
-    return DO_SYSCALL_INTERRUPTIBLE(read, ocall_read_args->fd, ocall_read_args->buf,
+
+    struct timeval tv;
+    DO_SYSCALL(gettimeofday, &tv, NULL);
+    uint64_t start_microsec = tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
+
+    long ret = DO_SYSCALL_INTERRUPTIBLE(read, ocall_read_args->fd, ocall_read_args->buf,
                                     ocall_read_args->count);
+
+    struct timeval end_tv;
+    DO_SYSCALL(gettimeofday, &end_tv, NULL);
+    uint64_t end_microsec = end_tv.tv_sec * (uint64_t)1000000 + end_tv.tv_usec;
+    log_error("duration host read %ld size %ld fd %ld time %ld", end_microsec - start_microsec, ocall_read_args->count,ocall_read_args->fd,end_microsec);
+
+    return ret;
 }
 
 static long sgx_ocall_write(void* args) {
     struct ocall_write* ocall_write_args = args;
-    return DO_SYSCALL_INTERRUPTIBLE(write, ocall_write_args->fd, ocall_write_args->buf,
+
+    struct timeval tv;
+    DO_SYSCALL(gettimeofday, &tv, NULL);
+    uint64_t start_microsec = tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
+
+    long ret = DO_SYSCALL_INTERRUPTIBLE(write, ocall_write_args->fd, ocall_write_args->buf,
                                     ocall_write_args->count);
+
+    struct timeval end_tv;
+    DO_SYSCALL(gettimeofday, &end_tv, NULL);
+    uint64_t end_microsec = end_tv.tv_sec * (uint64_t)1000000 + end_tv.tv_usec;
+    log_error("duration host write %ld size %ld fd %ld time %ld", end_microsec - start_microsec, ocall_write_args->count, ocall_write_args->fd,end_microsec);
+
+
+    return ret;
 }
 
 static long sgx_ocall_pread(void* args) {
     struct ocall_pread* ocall_pread_args = args;
-    return DO_SYSCALL_INTERRUPTIBLE(pread64, ocall_pread_args->fd, ocall_pread_args->buf,
+
+    struct timeval tv;
+    DO_SYSCALL(gettimeofday, &tv, NULL);
+    uint64_t start_microsec = tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
+
+    long ret = DO_SYSCALL_INTERRUPTIBLE(pread64, ocall_pread_args->fd, ocall_pread_args->buf,
                                     ocall_pread_args->count, ocall_pread_args->offset);
+
+    struct timeval end_tv;
+    DO_SYSCALL(gettimeofday, &end_tv, NULL);
+    uint64_t end_microsec = end_tv.tv_sec * (uint64_t)1000000 + end_tv.tv_usec;
+    log_error("duration host pread64 %ld size %ld fd %ld time %ld", end_microsec - start_microsec, ocall_pread_args->count,ocall_pread_args->fd,end_microsec);
+
+    return ret;
 }
 
 static long sgx_ocall_pwrite(void* args) {
     struct ocall_pwrite* ocall_pwrite_args = args;
-    return DO_SYSCALL_INTERRUPTIBLE(pwrite64, ocall_pwrite_args->fd, ocall_pwrite_args->buf,
+
+    struct timeval tv;
+    DO_SYSCALL(gettimeofday, &tv, NULL);
+    uint64_t start_microsec = tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
+
+    long ret = DO_SYSCALL_INTERRUPTIBLE(pwrite64, ocall_pwrite_args->fd, ocall_pwrite_args->buf,
                                     ocall_pwrite_args->count, ocall_pwrite_args->offset);
+
+    struct timeval end_tv;
+    DO_SYSCALL(gettimeofday, &end_tv, NULL);
+    uint64_t end_microsec = end_tv.tv_sec * (uint64_t)1000000 + end_tv.tv_usec;
+    log_error("duration host pwrite64 %ld size %ld fd %ld time %ld", end_microsec - start_microsec, ocall_pwrite_args->count, ocall_pwrite_args->fd,end_microsec);
+
+    return ret;
 }
 
 static long sgx_ocall_fstat(void* args) {
     struct ocall_fstat* ocall_fstat_args = args;
-    return DO_SYSCALL_INTERRUPTIBLE(fstat, ocall_fstat_args->fd, &ocall_fstat_args->stat);
+
+    struct timeval tv;
+    DO_SYSCALL(gettimeofday, &tv, NULL);
+    uint64_t start_microsec = tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
+
+    long ret = DO_SYSCALL_INTERRUPTIBLE(fstat, ocall_fstat_args->fd, &ocall_fstat_args->stat);
+
+    struct timeval end_tv;
+    DO_SYSCALL(gettimeofday, &end_tv, NULL);
+    uint64_t end_microsec = end_tv.tv_sec * (uint64_t)1000000 + end_tv.tv_usec;
+    log_error("duration host fstat %ld", end_microsec - start_microsec);
+    return ret;
 }
 
 static long sgx_ocall_fionread(void* args) {
     struct ocall_fionread* ocall_fionread_args = args;
     int val;
+
+    struct timeval tv;
+    DO_SYSCALL(gettimeofday, &tv, NULL);
+    uint64_t start_microsec = tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
+
     long ret = DO_SYSCALL_INTERRUPTIBLE(ioctl, ocall_fionread_args->fd, FIONREAD, &val);
+
+    struct timeval end_tv;
+    DO_SYSCALL(gettimeofday, &end_tv, NULL);
+    uint64_t end_microsec = end_tv.tv_sec * (uint64_t)1000000 + end_tv.tv_usec;
+    log_error("duration host fionread %ld", end_microsec - start_microsec);
+
+
     return ret < 0 ? ret : val;
 }
 
@@ -189,21 +284,18 @@ static long sgx_ocall_fchmod(void* args) {
 }
 
 static long sgx_ocall_fsync(void* args) {
-    {
-        struct timeval tv;
-        DO_SYSCALL(gettimeofday, &tv, NULL);
-        uint64_t microsec = tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
-        log_error("before host fsync %ld", microsec);
-    }
+    struct timeval tv;
+    DO_SYSCALL(gettimeofday, &tv, NULL);
+    uint64_t start_microsec = tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
     
     struct ocall_fsync* ocall_fsync_args = args;
     long ret = DO_SYSCALL_INTERRUPTIBLE(fsync, ocall_fsync_args->fd);
-    {
-        struct timeval tv;
-        DO_SYSCALL(gettimeofday, &tv, NULL);
-        uint64_t microsec = tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
-        log_error("after host fsync %ld", microsec);
-    }
+
+    struct timeval end_tv;
+    DO_SYSCALL(gettimeofday, &end_tv, NULL);
+    uint64_t end_microsec = end_tv.tv_sec * (uint64_t)1000000 + end_tv.tv_usec;
+    log_error("duration host fsync %ld fd %ld time %ld", end_microsec - start_microsec,ocall_fsync_args->fd,end_microsec);
+
     return ret;
 }
 
